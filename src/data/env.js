@@ -1,5 +1,5 @@
-const env = process.env; // TODO -
+const env = process.env;
 
 module.exports = {
-    // No envs
+    GLS_REGISTRATION_CONNECT: env.GLS_REGISTRATION_CONNECT,
 };
