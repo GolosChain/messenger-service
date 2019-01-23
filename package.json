@@ -35,6 +35,7 @@
     ]
   },
   "dependencies": {
-    "gls-core-service": "^2.17.0"
+    "gls-core-service": "^2.17.0",
+    "random": "^2.0.13"
   }
 }
