@@ -78,8 +78,7 @@ class AbstractBot extends BasicService {
                 break;
 
             default:
-                Logger.warn(`Unknown verification command - ${command}`);
-                stats.increment('unknown_verification_command');
+                await this._sendUnknownCommandMessage(chatUsername, lang);
         }
     }
 
@@ -97,6 +96,12 @@ class AbstractBot extends BasicService {
 
     async _sendCodeMessage(chatUsername, lang, code) {
         const message = locale.registration.code[lang](code);
+
+        await this._sendToUser({ chatUsername, message });
+    }
+
+    async _sendUnknownCommandMessage(chatUsername, lang) {
+        const message = locale.support.unknownCommand[lang]();
 
         await this._sendToUser({ chatUsername, message });
     }

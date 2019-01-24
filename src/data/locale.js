@@ -17,4 +17,10 @@ module.exports = Template.makeFor({
             en: 'Your verification code is ${code}',
         },
     },
+    support: {
+        unknownCommand: {
+            ru: 'ОПОВЕЩЕНИЕ О НЕИЗВЕСТНОЙ КОМАНДЕ',
+            en: 'ЕН ОПОВЕЩЕНИЕ О НЕИЗВЕСТНОЙ КОМАНДЕ',
+        }
+    }
 });

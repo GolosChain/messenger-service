@@ -49,7 +49,18 @@ class Telegram extends AbstractBot {
     }
 
     async _handleMessage({ chatUsername, message }) {
-        // TODO Route with parse start command
+        switch (message) {
+            case '/start':
+                await this._handleVerification({ chatUsername, command: 'getVerificationCode' });
+                break;
+
+            case '/resendVerificationCode':
+                await this._handleVerification({ chatUsername, command: 'resendVerificationCode' });
+                break;
+
+            default:
+                await this._handleVerification({ chatUsername });
+        }
     }
 
     async _sendToUser({ chatUsername, message }) {
