@@ -6,7 +6,7 @@ const stats = core.utils.statsClient;
 const locale = require('../data/locale');
 
 class AbstractBot extends BasicService {
-    constructor({ receiver, connector }) {
+    constructor({ receiver = null, connector }) {
         super();
 
         this._receiver = receiver;
@@ -18,15 +18,17 @@ class AbstractBot extends BasicService {
 
         const className = this.constructor.name;
 
-        this._receiver.on(
-            `${className.toLocaleLowerCase()}Message`,
-            this._tryHandleMessage.bind(this)
-        );
+        if (this._receiver) {
+            this._receiver.on(
+                `${className.toLocaleLowerCase()}Message`,
+                this._tryHandleMessage.bind(this)
+            );
+        }
     }
 
     async _tryHandleMessage(data) {
         try {
-            await this.handleMessage(data);
+            await this._handleMessage(data);
         } catch (error) {
             const className = this.constructor.name;
 
@@ -34,74 +36,74 @@ class AbstractBot extends BasicService {
 
             try {
                 await this._sendToUser({
-                    user: data.user,
+                    chatUsername: data.chatUsername,
                     message: `Error, try again :: ${error}`,
                 });
             } catch (error) {
                 Logger.error(
                     `Cant send error message from ${className} to user ${
-                        data.user
+                        data.chatUsername
                     }, but continue - ${error}`
                 );
             }
         }
     }
 
-    async handleMessage({ from, message }) {
+    async _handleMessage({ chatUsername, message }) {
         // abstract
     }
 
-    async handleRegistrationVerification({ from, command }) {
-        const lang = await this._getUserLang(from);
+    async _handleVerification({ chatUsername, command }) {
+        const lang = await this._getUserLang(chatUsername);
 
         switch (command) {
-            case 'start':
+            case 'getVerificationCode':
                 {
                     const code = this._makeRegistrationCode();
 
-                    await this._sendRegistrationHelloMessage(from, lang);
-                    await this._bindRegistrationCode(from, code);
-                    await this._sendCodeMessage(from, lang, code);
+                    await this._sendRegistrationHelloMessage(chatUsername, lang);
+                    await this._bindRegistrationCode(chatUsername, code);
+                    await this._sendCodeMessage(chatUsername, lang, code);
                 }
                 break;
 
-            case 'resendCode':
+            case 'resendVerificationCode':
                 {
                     const code = this._makeRegistrationCode();
 
-                    await this._sendResendCodeMessage(from, lang);
-                    await this._bindRegistrationCode(from, code);
-                    await this._sendCodeMessage(from, lang, code);
+                    await this._sendResendCodeMessage(chatUsername, lang);
+                    await this._bindRegistrationCode(chatUsername, code);
+                    await this._sendCodeMessage(chatUsername, lang, code);
                 }
                 break;
 
             default:
-                Logger.warn(`Unknown registration verification command - ${command}`);
-                stats.increment('unknown_registration_verification_command');
+                Logger.warn(`Unknown verification command - ${command}`);
+                stats.increment('unknown_verification_command');
         }
     }
 
-    async _sendRegistrationHelloMessage(user, lang) {
+    async _sendRegistrationHelloMessage(chatUsername, lang) {
         const message = locale.registration.hello[lang]();
 
-        await this._sendToUser({ user, message });
+        await this._sendToUser({ chatUsername, message });
     }
 
-    async _sendResendCodeMessage(user, lang) {
+    async _sendResendCodeMessage(chatUsername, lang) {
         const message = locale.registration.resendCode[lang]();
 
-        await this._sendToUser({ user, message });
+        await this._sendToUser({ chatUsername, message });
     }
 
-    async _sendCodeMessage(user, lang, code) {
+    async _sendCodeMessage(chatUsername, lang, code) {
         const message = locale.registration.code[lang](code);
 
-        await this._sendToUser({ user, message });
+        await this._sendToUser({ chatUsername, message });
     }
 
-    async _bindRegistrationCode(from, code) {
+    async _bindRegistrationCode(chatUsername, code) {
         return await this._connector.callService('registration', 'messenger.bindCode', {
-            from,
+            chatUsername,
             code,
         });
     }
@@ -110,11 +112,11 @@ class AbstractBot extends BasicService {
         return random.int(1000, 9999);
     }
 
-    async _sendToUser({ user, message }) {
+    async _sendToUser({ chatUsername, message }) {
         // abstract
     }
 
-    async _getUserLang(user) {
+    async _getUserLang(chatUsername) {
         // abstract
     }
 }

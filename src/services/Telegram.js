@@ -1,49 +1,66 @@
 const request = require('request-promise-native');
+const core = require('gls-core-service');
+const Logger = core.utils.Logger;
 const env = require('../data/env');
 const AbstractBot = require('./AbstractBot');
+const Model = require('../models/Telegram');
 
 const API_PREFIX = 'https://api.telegram.org/bot';
 
 class Telegram extends AbstractBot {
     async start() {
-        // TODO Messages reading loop
+        this.startLoop(0, env.GLS_TELEGRAM_UPDATES_LOOP);
     }
 
-    async extractNewMessages() {
+    async iteration() {
+        try {
+            const updates = await this._callApi('getUpdates');
+            const messageObjects = await this._extractNewMessages(updates);
+
+            for (const { chatUsername, message } of messageObjects) {
+                await this._tryHandleMessage({ chatUsername, message });
+            }
+        } catch (error) {
+            Logger.error(`Cant get message list from Telegram, but continue - ${error}`);
+        }
+    }
+
+    async _extractNewMessages(updates) {
         // TODO Extractor + MongoDB
     }
 
-    async handleMessage({ from, message }) {
+    async _handleMessage({ chatUsername, message }) {
         // TODO Route with parse start command
     }
 
-    async _sendToUser({ user, message }) {
-        const rawResult = await request({
-            method: 'POST',
-            uri: this.makeRequestString('sendMessage', { text: message }),
-        });
-        let result;
+    async _sendToUser({ chatUsername, message }) {
+        // TODO Get chat id
 
-        try {
-            result = JSON.parse(rawResult);
-        } catch (error) {
-            throw error;
-        }
+        await this._callApi('sendMessage', { text: message });
+    }
+
+    async _getUserLang(chatUsername) {
+        const data = await Model.findOne({ chatUsername }, { lang: true });
+
+        return data.lang;
+    }
+
+    async _getUserChatId(chatUsername) {
+        const data = await Model.findOne({ chatUsername }, { chatId: true });
+
+        return data.chatId;
+    }
+
+    async _callApi(command, params) {
+        const rawResult = await request(this.makeRequestString(command, params));
+        const result = JSON.parse(rawResult);
 
         if (result.ok !== true) {
             throw result.description;
         }
     }
 
-    async _getUserLang(user) {
-        // TODO From db
-    }
-
-    async _getUserChatId(user) {
-        // TODO From db
-    }
-
-    makeRequestString(command, paramsObject) {
+    makeRequestString(command, paramsObject = {}) {
         const paramsString = Object.keys(paramsObject)
             .map(key => `${key}=${paramsObject[key]}`)
             .join('&');
