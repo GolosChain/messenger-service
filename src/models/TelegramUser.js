@@ -18,7 +18,7 @@ module.exports = MongoDB.makeModel(
     },
     {
         index: [
-            // Search and identify
+            // Search
             {
                 fields: {
                     chatUsername: 1,
