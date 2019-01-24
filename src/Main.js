@@ -8,6 +8,7 @@ class Main extends BasicMain {
     constructor() {
         super(stats, env);
         const connector = new Connector();
+        // TODO MongoDB
 
         this.addNested(connector);
         this.defineMeta({ name: 'messenger' });
